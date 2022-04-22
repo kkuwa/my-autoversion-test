@@ -23,24 +23,29 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: '16'
-      - name: Install bumper plugin
-        run: npm i -g release-it@${RELEASE_IT_VERSION}
-      - name: Install bumper plugin
-        run: npm i -g @release-it/bumper
       - name: Set releaser settings
         run: |
           git config --global user.name ${{ secrets.EXT_GITHUB_USER }}
           git config --global user.email ${{ secrets.EXT_GITHUB_EMAIL }}
-      - name: Major release
-        id: major
-        if: contains(toJSON(github.event.commits.*.message), '[[MAJOR]]')
-        run:  release-it -- major --ci
+      # - name: Major release
+      #   if: contains(toJSON(github.event.commits.*.message), '[[MAJOR]]')
+      #   run:  release-it -- major --ci
+      - name: Patch release
+        if: "!contains(toJSON(github.event.commits.*.message), '[automate_versioning] Release')"
+        run: |
+          echo 'UPDATE_ARGS=patch' >> $GITHUB_ENV
       - name: Minor release
-        id: minor
-        # メジャーバージョンアップをしていないときマイナーバージョンアップを行なうか
-        if: steps.major.conclusion == 'skipped'  && contains(toJSON(github.event.commits.*.message), '[[MINOR]]')
-        run:  release-it -- minor --ci
+        if: contains(toJSON(github.event.commits.*.message), '[[MINOR]]')
+        run: |
+          echo 'UPDATE_ARGS=minor' >> $GITHUB_ENV
+      - name: Major release
+        if: contains(toJSON(github.event.commits.*.message), '[[MAJOR]]')
+        run: |
+          echo 'UPDATE_ARGS=major' >> $GITHUB_ENV
       - name: Patch release
         # コミットメッセージに特に指定がなく、かつバージョン更新コミットでない場合（ループ抑止）はマイナーバージョンを更新する
-        if: "!(steps.major.conclusion == 'success' || steps.minor.conclusion == 'success') && !contains(toJSON(github.event.commits.*.message), '[automate_versioning] Release')"
-        run:  release-it -- patch --ci
+        if: "env.UPDATE_ARGS != ''"
+        run: |
+          npm i -g release-it@${RELEASE_IT_VERSION}
+          npm i -g @release-it/bumper
+          release-it -- ${UPDATE_ARGS} --ci
