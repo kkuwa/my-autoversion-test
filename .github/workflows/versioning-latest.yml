@@ -24,6 +24,8 @@ jobs:
         with:
           node-version: '16'
       - name: Install bumper plugin
+        run: npm i -g release-it@${RELEASE_IT_VERSION}
+      - name: Install bumper plugin
         run: npm i -g @release-it/bumper
       - name: Set releaser settings
         run: |
@@ -32,13 +34,13 @@ jobs:
       - name: Major release
         id: major
         if: contains(toJSON(github.event.commits.*.message), '[[MAJOR]]')
-        run:  npx release-it@${RELEASE_IT_VERSION} -- major --ci
+        run:  release-it@${RELEASE_IT_VERSION} -- major --ci
       - name: Minor release
         id: minor
         # メジャーバージョンアップをしていないときマイナーバージョンアップを行なうか
         if: steps.major.conclusion == 'skipped'  && contains(toJSON(github.event.commits.*.message), '[[MINOR]]')
-        run:  npx release-it@${RELEASE_IT_VERSION} -- minor --ci
+        run:  release-it@${RELEASE_IT_VERSION} -- minor --ci
       - name: Patch release
         # コミットメッセージに特に指定がなく、かつバージョン更新コミットでない場合（ループ抑止）はマイナーバージョンを更新する
         if: "!(steps.major.conclusion == 'success' || steps.minor.conclusion == 'success') && !contains(toJSON(github.event.commits.*.message), '[automate_versioning] Release')"
-        run:  npx release-it@${RELEASE_IT_VERSION} -- patch --ci
+        run:  release-it@${RELEASE_IT_VERSION} -- patch --ci
